@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 
 
 class Application(object):
@@ -18,6 +19,16 @@ class Application(object):
 
     def get_webpage(self, url):
         self.driver.get(url)
+
+    def element_available(self, xpath):
+        try:
+            WebDriverWait(self.driver, 4).until(
+                EC.visibility_of_element_located((By.XPATH, xpath))
+            )
+            self.driver.find_element(By.XPATH, xpath)
+        except NoSuchElementException:
+            return False
+        return True
 
     def email_auth(self, email, password):
         if self.job_board_name in "otta":
@@ -36,24 +47,64 @@ class Application(object):
 
     def modal_checker(self):
         '''
-        Check if Modal has data
+        Check if Modal has href data
+        :return: Boolean
         '''
-        WebDriverWait(self.driver, 2).until(
-            EC.element_to_be_clickable((By.XPATH, '//*[@data-test="apply-modal-external-link"]'))
-        )
-
-        if self.driver.find_element(By.XPATH, '//*[@data-test="apply-modal-external-link"]'):
-            return True
+        return self.element_available('//*[@data-test="apply-modal-external-link"]')
 
     def applications_left(self):
 
-        amount_left = len(self.driver.find_elements(By.XPATH, '//div[@class="sc-bYEvvW bEenI"]//*[@class="sc-kLgnNl jJkxZW"]'))
+        amount_left = len(
+            self.driver.find_elements(By.XPATH, '//div[@class="sc-bYEvvW bEenI"]//*[@class="sc-kLgnNl jJkxZW"]'))
 
         return amount_left
 
+    # TODO: Implement Next Batch
+    def next_batch(self):
+        """
+        Change batch
+        :return:
+        """
+        if self.element_available('//button[@class="sc-kstqJO jkAPd"]'):
+            self.driver.find_element(By.XPATH, '//button[@class="sc-kstqJO jkAPd"]').click()
+
+    def application_loop(self, applications_left, amount):
+        applications = []
+
+        for i in range(applications_left):
+            if len(applications) <= amount:
+                WebDriverWait(self.driver, 2).until(
+                    EC.element_to_be_clickable((By.XPATH, '//*[@data-test="apply-button"]'))
+                )
+                # open modal
+
+                self.driver.find_element(By.XPATH, '//*[@data-test="apply-button"]').click()
+
+                if self.modal_checker():
+                    href = self.driver.find_element(By.XPATH,
+                                                    '//*[@data-test="apply-modal-external-link"]').get_attribute(
+                        'href')
+                    applications.append(href)
+                    print(href)
+
+                # exit
+                self.driver.find_element(By.XPATH, '//div[@class="sc-jHVedQ jgJDwK"]').click()
+
+                # next
+                if applications_left == 0:
+                    self.next_batch()
+                    applications_left = self.applications_left()
+                else:
+                    self.driver.find_element(By.XPATH, '//*[@data-testid="next-button"]').click()
+
+        return applications
+
     def capture_openings(self, amount):
 
-        captures = []
+        # captures = []
+
+        if self.element_available('//button[@class="sc-kstqJO jkAPd"]'):
+            self.driver.find_element(By.XPATH, '//button[@class="sc-kstqJO jkAPd"]').click()
 
         WebDriverWait(self.driver, 2).until(
             EC.element_to_be_clickable((By.XPATH, '//div[@class="sc-bYEvvW bEenI"]//*[@class="sc-kLgnNl jJkxZW"]')),
@@ -61,24 +112,8 @@ class Application(object):
 
         applications_left = self.applications_left()
 
-        for i in range(applications_left):
-            WebDriverWait(self.driver, 2).until(
-                EC.element_to_be_clickable((By.XPATH, '//*[@data-test="apply-button"]'))
-            )
-            # open modal
+        openings = self.application_loop(applications_left, amount)
 
-            self.driver.find_element(By.XPATH, '//*[@data-test="apply-button"]').click()
+        print(openings, len(openings))
 
-            if self.modal_checker():
-
-                href = self.driver.find_element(By.XPATH, '//*[@data-test="apply-modal-external-link"]').get_attribute(
-                    'href')
-
-                captures.append(href)
-                # exit
-                self.driver.find_element(By.XPATH, '//div[@class="sc-clsFYl gDsWBR"]').click()
-
-            # next
-            self.driver.find_element(By.XPATH, '//*[@data-testid="next-button"]').click()
-
-        print(captures)
+        # print(captures)
