@@ -20,7 +20,7 @@ def automation_events():
     application_automator.set_url("https://app.otta.com/login")
     application_automator.get_webpage(application_automator.url)
     application_automator.email_auth('', '')
-    application_automator.capture_openings(3)
+    application_automator.capture_openings(8)
     time.sleep(10)
 
 
@@ -37,4 +37,4 @@ def file_writing_events():
 
 
 if __name__ == '__main__':
-    file_writing_events()
+    automation_events()

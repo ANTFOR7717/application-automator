@@ -1,8 +1,9 @@
+# TODO: Convert find by class to find by xpaths
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 
 class Application(object):
@@ -20,15 +21,19 @@ class Application(object):
     def get_webpage(self, url):
         self.driver.get(url)
 
-    def element_available(self, xpath):
+    def element_available(self, xpath, time=4):
         try:
-            WebDriverWait(self.driver, 4).until(
+            WebDriverWait(self.driver, time).until(
                 EC.visibility_of_element_located((By.XPATH, xpath))
             )
             self.driver.find_element(By.XPATH, xpath)
-        except NoSuchElementException:
+        # TODO: Fix Exception Issue
+        except:
             return False
         return True
+
+    def select_element_xpath(self, xpath):
+        return self.driver.find_element(By.XPATH, xpath)
 
     def email_auth(self, email, password):
         if self.job_board_name in "otta":
@@ -59,7 +64,7 @@ class Application(object):
 
         return amount_left
 
-    # TODO: Implement Next Batch
+    # TODO: Implement Next Batch auto
     def next_batch(self):
         """
         Change batch
@@ -88,7 +93,7 @@ class Application(object):
                     print(href)
 
                 # exit
-                self.driver.find_element(By.XPATH, '//div[@class="sc-jHVedQ jgJDwK"]').click()
+                self.driver.find_element(By.XPATH, '//div[@data-testid="modal-content"]//div').click()
 
                 # next
                 if applications_left == 0:
@@ -103,10 +108,10 @@ class Application(object):
 
         # captures = []
 
-        if self.element_available('//button[@class="sc-kstqJO jkAPd"]'):
+        if self.element_available('//button[@class="sc-kstqJO jkAPd"]', 2):
             self.driver.find_element(By.XPATH, '//button[@class="sc-kstqJO jkAPd"]').click()
 
-        WebDriverWait(self.driver, 2).until(
+        WebDriverWait(self.driver, 4).until(
             EC.element_to_be_clickable((By.XPATH, '//div[@class="sc-bYEvvW bEenI"]//*[@class="sc-kLgnNl jJkxZW"]')),
         )
 
